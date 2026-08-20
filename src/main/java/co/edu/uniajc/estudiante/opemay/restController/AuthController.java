@@ -1,178 +1,37 @@
 package co.edu.uniajc.estudiante.opemay.restController;
 
-import java.util.List;
-import java.util.Map;
-
+import co.edu.uniajc.estudiante.opemay.Service.UsuarioService;
+import co.edu.uniajc.estudiante.opemay.dto.LoginRequestDTO;
+import co.edu.uniajc.estudiante.opemay.dto.LoginResponseDTO;
+import co.edu.uniajc.estudiante.opemay.dto.UsuarioRegistroDTO;
+import co.edu.uniajc.estudiante.opemay.model.Usuario;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
-import co.edu.uniajc.estudiante.opemay.Service.JwtService;
-import co.edu.uniajc.estudiante.opemay.Service.UserService;
-import co.edu.uniajc.estudiante.opemay.dto.LoginRequest;
-import co.edu.uniajc.estudiante.opemay.model.User;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
-@Slf4j
-@CrossOrigin(origins = "*")
+@Tag(name = "Autenticación", description = "Endpoints para autenticación y registro")
 public class AuthController {
-
-    private final UserService userService;
-    private final JwtService jwtService;
-    private final PasswordEncoder passwordEncoder;
-
+    
+    private final UsuarioService usuarioService;
+    
+    @PostMapping("/registro")
+    @Operation(summary = "Registrar nuevo usuario")
+    public ResponseEntity<Usuario> registrar(@Valid @RequestBody UsuarioRegistroDTO dto) {
+        Usuario usuario = usuarioService.registrarUsuario(dto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(usuario);
+    }
+    
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
-        try {
-            log.info("Intento de login para usuario: {}", loginRequest.getEmail());
-            
-            // Buscar usuario
-            User user = userService.getUserByEmail(loginRequest.getEmail());
-            if (user == null) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("error", "Usuario no encontrado"));
-            }
-            
-            // Verificar contraseña
-            if (!passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("error", "Contraseña incorrecta"));
-            }
-            
-            // Generar token JWT usando email
-            String jwt = jwtService.generateTokenFromEmail(user.getEmail());
-            
-            log.info("Login exitoso para usuario: {}", loginRequest.getEmail());
-            
-            return ResponseEntity.ok(Map.of(
-                "token", jwt,
-                "type", "Bearer",
-                "email", user.getEmail(),
-                "roles", user.getRoles() != null ? user.getRoles() : List.of("USER"),
-                "username", user.getUsername() != null ? user.getUsername() : ""
-            ));
-            
-        } catch (Exception e) {
-            log.error("Error de autenticación para usuario: {} - {}", 
-                loginRequest.getEmail(), e.getMessage());
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body(Map.of("error", "Error de autenticación"));
-        }
-    }
-
-
-
-    @PostMapping("/refresh")
-    public ResponseEntity<?> refreshToken(@RequestHeader("Authorization") String authHeader) {
-        try {
-            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-                return ResponseEntity.badRequest()
-                    .body(Map.of("error", "Token inválido"));
-            }
-
-            String token = authHeader.substring(7);
-            
-            if (!jwtService.validateToken(token)) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("error", "Token expirado o inválido"));
-            }
-
-            String username = jwtService.getUsernameFromToken(token);
-            String newToken = jwtService.generateTokenFromUsername(username);
-            
-            return ResponseEntity.ok(Map.of(
-                "token", newToken,
-                "type", "Bearer",
-                "username", username
-            ));
-            
-        } catch (Exception e) {
-            log.error("Error al refrescar token: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body(Map.of("error", "No se pudo refrescar el token"));
-        }
-    }
-
-    @GetMapping("/me")
-    public ResponseEntity<?> getCurrentUser(@RequestHeader("Authorization") String authHeader) {
-        try {
-            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-                return ResponseEntity.badRequest()
-                    .body(Map.of("error", "Token requerido"));
-            }
-
-            String token = authHeader.substring(7);
-            String username = jwtService.getUsernameFromToken(token);
-            
-            User user = userService.getUserByUsername(username);
-            if (user == null) {
-                return ResponseEntity.notFound().build();
-            }
-            
-            return ResponseEntity.ok(Map.of(
-                "username", user.getUsername(),
-                "email", user.getEmail(),
-                "roles", user.getRoles(),
-                "enabled", user.getEnabled()
-            ));
-            
-        } catch (Exception e) {
-            log.error("Error al obtener usuario actual: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body(Map.of("error", "Token inválido"));
-        }
-    }
-
-    /**
-     * Endpoint temporal para desarrollo - actualizar roles de usuario
-     * SOLO PARA TESTING - NO USAR EN PRODUCCIÓN
-     */
-    @PostMapping("/dev/update-roles")
-    public ResponseEntity<?> updateUserRoles(@RequestBody Map<String, Object> request) {
-        try {
-            String email = (String) request.get("email");
-            @SuppressWarnings("unchecked")
-            List<String> roles = (List<String>) request.get("roles");
-            
-            if (email == null || roles == null) {
-                return ResponseEntity.badRequest()
-                    .body(Map.of("error", "Email y roles son requeridos"));
-            }
-            
-            // Buscar usuario
-            User user = userService.getUserByEmail(email);
-            if (user == null) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Map.of("error", "Usuario no encontrado"));
-            }
-            
-            // Actualizar roles
-            user.setRoles(roles);
-            userService.updateUser(user);
-            
-            log.info("Roles actualizados para usuario {}: {}", email, roles);
-            
-            return ResponseEntity.ok(Map.of(
-                "message", "Roles actualizados exitosamente",
-                "email", email,
-                "roles", roles
-            ));
-            
-        } catch (Exception e) {
-            log.error("Error al actualizar roles: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("error", "Error interno del servidor"));
-        }
+    @Operation(summary = "Iniciar sesión")
+    public ResponseEntity<LoginResponseDTO> login(@Valid @RequestBody LoginRequestDTO dto) {
+        LoginResponseDTO response = usuarioService.login(dto);
+        return ResponseEntity.ok(response);
     }
 }

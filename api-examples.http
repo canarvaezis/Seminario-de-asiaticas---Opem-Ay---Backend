@@ -1,0 +1,365 @@
+### API de Gestión de Pescadería - Ejemplos de Peticiones
+### Usar con REST Client extension en VS Code o HTTP Client en IntelliJ
+
+@baseUrl = http://localhost:8080/api
+@contentType = application/json
+
+### Variables (actualizar después de login)
+@token = tu_token_aqui
+
+### ===========================================
+### AUTENTICACIÓN
+### ===========================================
+
+### 1. Registrar Usuario Administrador
+POST {{baseUrl}}/auth/registro
+Content-Type: {{contentType}}
+
+{
+  "nombre": "Admin",
+  "apellido": "Principal",
+  "correo": "admin@pescaderia.com",
+  "contrasena": "admin123",
+  "rolId": 1
+}
+
+### 2. Registrar Usuario Contador
+POST {{baseUrl}}/auth/registro
+Content-Type: {{contentType}}
+
+{
+  "nombre": "Juan",
+  "apellido": "Contador",
+  "correo": "contador@pescaderia.com",
+  "contrasena": "contador123",
+  "rolId": 2
+}
+
+### 3. Login
+# @name login
+POST {{baseUrl}}/auth/login
+Content-Type: {{contentType}}
+
+{
+  "correo": "admin@pescaderia.com",
+  "contrasena": "admin123"
+}
+
+### ===========================================
+### PRODUCTOS
+### ===========================================
+
+### 4. Listar Todos los Productos
+GET {{baseUrl}}/productos
+Authorization: Bearer {{token}}
+
+### 5. Crear Producto Base - Salmón
+POST {{baseUrl}}/productos
+Content-Type: {{contentType}}
+Authorization: Bearer {{token}}
+
+{
+  "nombre": "Salmón Entero",
+  "unidadMedidaId": 1,
+  "esBase": true
+}
+
+### 6. Crear Producto Base - Atún
+POST {{baseUrl}}/productos
+Content-Type: {{contentType}}
+Authorization: Bearer {{token}}
+
+{
+  "nombre": "Atún Entero",
+  "unidadMedidaId": 1,
+  "esBase": true
+}
+
+### 7. Crear Producto Trabajado - Filete de Salmón
+POST {{baseUrl}}/productos
+Content-Type: {{contentType}}
+Authorization: Bearer {{token}}
+
+{
+  "nombre": "Filete de Salmón",
+  "unidadMedidaId": 1,
+  "esBase": false
+}
+
+### 8. Crear Producto Trabajado - Cabeza de Salmón
+POST {{baseUrl}}/productos
+Content-Type: {{contentType}}
+Authorization: Bearer {{token}}
+
+{
+  "nombre": "Cabeza de Salmón",
+  "unidadMedidaId": 2,
+  "esBase": false
+}
+
+### 9. Crear Producto Trabajado - Posta de Salmón
+POST {{baseUrl}}/productos
+Content-Type: {{contentType}}
+Authorization: Bearer {{token}}
+
+{
+  "nombre": "Posta de Salmón",
+  "unidadMedidaId": 1,
+  "esBase": false
+}
+
+### 10. Listar Solo Productos Base
+GET {{baseUrl}}/productos/base
+Authorization: Bearer {{token}}
+
+### 11. Listar Solo Productos Trabajados
+GET {{baseUrl}}/productos/trabajados
+Authorization: Bearer {{token}}
+
+### ===========================================
+### COMPRAS
+### ===========================================
+
+### 12. Registrar Compra de Salmón
+# @name compra1
+POST {{baseUrl}}/compras
+Content-Type: {{contentType}}
+Authorization: Bearer {{token}}
+
+{
+  "codCargue": "CARGUE-001",
+  "usuarioId": 1,
+  "productoBaseId": 1,
+  "unidadMedidaId": 1,
+  "cantidadTotal": 100.500,
+  "valorUnitarioCompra": 15000.00
+}
+
+### 13. Registrar Compra de Atún
+POST {{baseUrl}}/compras
+Content-Type: {{contentType}}
+Authorization: Bearer {{token}}
+
+{
+  "codCargue": "CARGUE-002",
+  "usuarioId": 1,
+  "productoBaseId": 2,
+  "unidadMedidaId": 1,
+  "cantidadTotal": 80.750,
+  "valorUnitarioCompra": 18000.00
+}
+
+### 14. Listar Todas las Compras
+GET {{baseUrl}}/compras
+Authorization: Bearer {{token}}
+
+### 15. Obtener Compra por ID
+GET {{baseUrl}}/compras/1
+Authorization: Bearer {{token}}
+
+### 16. Ver Inventario General
+GET {{baseUrl}}/compras/inventario
+Authorization: Bearer {{token}}
+
+### ===========================================
+### PREPARACIONES
+### ===========================================
+
+### 17. Crear Preparación (Filetear Salmón)
+POST {{baseUrl}}/preparaciones
+Content-Type: {{contentType}}
+Authorization: Bearer {{token}}
+
+{
+  "compraId": 1,
+  "usuarioId": 1,
+  "cantidadEntrada": 50.000,
+  "detalles": [
+    {
+      "productoResultadoId": 3,
+      "cantidadSalida": 30.000
+    },
+    {
+      "productoResultadoId": 4,
+      "cantidadSalida": 5.000
+    },
+    {
+      "productoResultadoId": 5,
+      "cantidadSalida": 10.000
+    }
+  ]
+}
+
+### 18. Crear Otra Preparación
+POST {{baseUrl}}/preparaciones
+Content-Type: {{contentType}}
+Authorization: Bearer {{token}}
+
+{
+  "compraId": 1,
+  "usuarioId": 1,
+  "cantidadEntrada": 25.000,
+  "detalles": [
+    {
+      "productoResultadoId": 3,
+      "cantidadSalida": 15.000
+    },
+    {
+      "productoResultadoId": 4,
+      "cantidadSalida": 3.000
+    }
+  ]
+}
+
+### 19. Listar Todas las Preparaciones
+GET {{baseUrl}}/preparaciones
+Authorization: Bearer {{token}}
+
+### 20. Obtener Preparación por ID
+GET {{baseUrl}}/preparaciones/1
+Authorization: Bearer {{token}}
+
+### ===========================================
+### STOCK
+### ===========================================
+
+### 21. Ver Stock Trabajado Disponible
+GET {{baseUrl}}/stock/disponible
+Authorization: Bearer {{token}}
+
+### 22. Ver Stock Trabajado por Compra
+GET {{baseUrl}}/stock/compra/1
+Authorization: Bearer {{token}}
+
+### ===========================================
+### VENTAS
+### ===========================================
+
+### 23. Registrar Venta de Productos Trabajados
+POST {{baseUrl}}/ventas
+Content-Type: {{contentType}}
+Authorization: Bearer {{token}}
+
+{
+  "usuarioId": 1,
+  "detalles": [
+    {
+      "compraId": 1,
+      "productoId": 3,
+      "cantidad": 10.000,
+      "precioUnitario": 25000.00
+    },
+    {
+      "compraId": 1,
+      "productoId": 5,
+      "cantidad": 5.000,
+      "precioUnitario": 22000.00
+    }
+  ]
+}
+
+### 24. Registrar Venta de Producto Base
+POST {{baseUrl}}/ventas
+Content-Type: {{contentType}}
+Authorization: Bearer {{token}}
+
+{
+  "usuarioId": 1,
+  "detalles": [
+    {
+      "compraId": 1,
+      "productoId": 1,
+      "cantidad": 10.000,
+      "precioUnitario": 20000.00
+    }
+  ]
+}
+
+### 25. Listar Todas las Ventas
+GET {{baseUrl}}/ventas
+Authorization: Bearer {{token}}
+
+### 26. Obtener Venta por ID
+GET {{baseUrl}}/ventas/1
+Authorization: Bearer {{token}}
+
+### ===========================================
+### FLUJO COMPLETO DE EJEMPLO
+### ===========================================
+
+### PASO 1: Login y Obtener Token
+# POST {{baseUrl}}/auth/login (ver arriba)
+
+### PASO 2: Crear Productos
+# POST {{baseUrl}}/productos (ver ejemplos arriba)
+
+### PASO 3: Registrar Compra
+# POST {{baseUrl}}/compras (ver ejemplo arriba)
+
+### PASO 4: Ver Inventario Antes de Preparar
+# GET {{baseUrl}}/compras/inventario
+
+### PASO 5: Crear Preparación (Procesar Pescado)
+# POST {{baseUrl}}/preparaciones (ver ejemplo arriba)
+
+### PASO 6: Ver Stock Trabajado
+# GET {{baseUrl}}/stock/disponible
+
+### PASO 7: Registrar Venta
+# POST {{baseUrl}}/ventas (ver ejemplo arriba)
+
+### PASO 8: Verificar Inventario Final
+# GET {{baseUrl}}/compras/inventario
+# GET {{baseUrl}}/stock/disponible
+
+### ===========================================
+### CASOS DE ERROR (Para Probar Validaciones)
+### ===========================================
+
+### Error: Compra duplicada (mismo código)
+POST {{baseUrl}}/compras
+Content-Type: {{contentType}}
+Authorization: Bearer {{token}}
+
+{
+  "codCargue": "CARGUE-001",
+  "usuarioId": 1,
+  "productoBaseId": 1,
+  "unidadMedidaId": 1,
+  "cantidadTotal": 50.000,
+  "valorUnitarioCompra": 15000.00
+}
+
+### Error: Preparación sin stock suficiente
+POST {{baseUrl}}/preparaciones
+Content-Type: {{contentType}}
+Authorization: Bearer {{token}}
+
+{
+  "compraId": 1,
+  "usuarioId": 1,
+  "cantidadEntrada": 999999.000,
+  "detalles": [
+    {
+      "productoResultadoId": 3,
+      "cantidadSalida": 100.000
+    }
+  ]
+}
+
+### Error: Venta sin stock
+POST {{baseUrl}}/ventas
+Content-Type: {{contentType}}
+Authorization: Bearer {{token}}
+
+{
+  "usuarioId": 1,
+  "detalles": [
+    {
+      "compraId": 1,
+      "productoId": 3,
+      "cantidad": 999999.000,
+      "precioUnitario": 25000.00
+    }
+  ]
+}

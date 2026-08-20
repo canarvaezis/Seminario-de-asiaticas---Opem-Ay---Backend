@@ -49,11 +49,11 @@ public class OrderController {
     
     /**
      * Método helper para obtener el ID del usuario actual
-     */
+    
     private String getCurrentUserId() {
         return getCurrentUserPrincipal().getId();
     }
-
+ */
     /**
      * Método helper para verificar si el usuario actual es admin
      */

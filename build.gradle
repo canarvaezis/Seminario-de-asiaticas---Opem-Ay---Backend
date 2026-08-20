@@ -12,7 +12,7 @@ jacoco {
 
 group = 'co.edu.uniajc.estudiante'
 version = '0.0.1-SNAPSHOT'
-description = 'Proyecto de eccomerse para una tienda de frutas'
+description = 'Sistema de gestión de pescadería'
 
 java {
     sourceCompatibility = JavaVersion.VERSION_21
@@ -59,6 +59,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
     implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 
     // JWT
     implementation 'io.jsonwebtoken:jjwt-api:0.12.3'
@@ -70,9 +71,12 @@ dependencies {
     implementation 'io.github.resilience4j:resilience4j-spring-boot3'
     implementation 'io.github.resilience4j:resilience4j-micrometer'
 
-    // Liquibase + H2
+    // PostgreSQL
+    runtimeOnly 'org.postgresql:postgresql'
+
+    // Liquibase + H2 (H2 para testing)
     implementation 'org.liquibase:liquibase-core'
-    implementation 'com.h2database:h2'
+    testImplementation 'com.h2database:h2'
 
     // Lombok
     compileOnly 'org.projectlombok:lombok'
@@ -87,6 +91,9 @@ dependencies {
     // Swagger/OpenAPI 3
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.2.0'
     implementation 'org.springdoc:springdoc-openapi-starter-common:2.2.0'
+
+    // Generacion PDF
+    implementation 'org.apache.pdfbox:pdfbox:3.0.2'
 
     // Testing
     testImplementation 'org.springframework.boot:spring-boot-starter-test'

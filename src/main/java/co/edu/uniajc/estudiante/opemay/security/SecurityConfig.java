@@ -1,9 +1,8 @@
 package co.edu.uniajc.estudiante.opemay.security;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -15,21 +14,25 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
+@RequiredArgsConstructor
 public class SecurityConfig {
 
-    @Autowired
-    @Lazy
-    private JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final JwtAuthenticationEntryPoint jwtAuthEntryPoint;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
-    
+
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
@@ -39,64 +42,43 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
             .csrf(csrf -> csrf.disable())
-            .cors(cors -> cors.configurationSource(corsConfigurationSource())) // Configuración CORS
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .exceptionHandling(ex -> ex.authenticationEntryPoint(jwtAuthEntryPoint))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/", "/home", "/index", "/status").permitAll()
+                // Rutas públicas
+                .requestMatchers("/error").permitAll()
                 .requestMatchers("/api/auth/**").permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/users/register").permitAll() // Permitir registro sin auth
-                .requestMatchers(HttpMethod.GET, "/api/products/**").permitAll() // Solo GET permitido sin auth
-                .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll() // Categorías públicas
-                .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll() // Categorías públicas
-                // Swagger UI endpoints
+                // Swagger UI
                 .requestMatchers("/swagger-ui/**", "/swagger-ui.html").permitAll()
                 .requestMatchers("/v3/api-docs/**", "/v3/api-docs.yaml").permitAll()
                 .requestMatchers("/swagger-resources/**", "/webjars/**").permitAll()
-                .requestMatchers("/actuator/**").permitAll()
-                .requestMatchers("/h2-console/**").permitAll()
-                .requestMatchers("/error").permitAll()
+                // Actuator
+                .requestMatchers("/actuator/health").permitAll()
+                // Catálogo público (sin autenticación)
+                .requestMatchers(HttpMethod.GET, "/api/catalogo/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/ciudades/**").permitAll()
+                // Productos: GET es público para consultas
+                .requestMatchers(HttpMethod.GET, "/api/productos/**").permitAll()
+                // Todo lo demás requiere autenticación
                 .anyRequest().authenticated()
             )
-            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-            .headers(headers -> headers.disable()); // Para H2 console
-        
+            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+
         return http.build();
     }
 
     @Bean
-    public org.springframework.web.cors.CorsConfigurationSource corsConfigurationSource() {
-        org.springframework.web.cors.CorsConfiguration configuration = new org.springframework.web.cors.CorsConfiguration();
-
-        // Orígenes permitidos para desarrollo
-        configuration.addAllowedOrigin("http://localhost:59679");      // VS Code Live Server principal
-        configuration.addAllowedOrigin("http://127.0.0.1:5500");       // Live Server alternativo
-        configuration.addAllowedOrigin("http://localhost:5500");       // Live Server localhost
-        configuration.addAllowedOrigin("http://localhost:3000");       // React/Node.js
-        configuration.addAllowedOrigin("http://localhost:8080");       // Spring Boot
-        configuration.addAllowedOrigin("http://localhost:8081");       // Cliente alternativo
-        configuration.addAllowedOrigin("http://127.0.0.1:8081");       // Cliente 127.0.0.1
-        
-        // Permitir todos los métodos HTTP
-        configuration.addAllowedMethod("GET");
-        configuration.addAllowedMethod("POST");
-        configuration.addAllowedMethod("PUT");
-        configuration.addAllowedMethod("DELETE");
-        configuration.addAllowedMethod("OPTIONS");
-        configuration.addAllowedMethod("PATCH");
-        
-        // Permitir todos los headers
-        configuration.addAllowedHeader("*");
-        
-        // Permitir credenciales (cookies, authorization headers, etc.)
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOriginPatterns(List.of("*"));
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
+        configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
-        
-        // Configurar tiempo de cache para preflight requests
         configuration.setMaxAge(3600L);
-        
-        org.springframework.web.cors.UrlBasedCorsConfigurationSource source = 
-            new org.springframework.web.cors.UrlBasedCorsConfigurationSource();
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
-        
         return source;
     }
 }
